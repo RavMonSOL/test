@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import random
 from dataclasses import dataclass
 
 from .agents import BaseAgent, MeanReversionAgent, MomentumAgent, NoiseSentimentAgent
 from .launch import LaunchPolicyConfig, LaunchPolicyEngine
-from .models import AgentAction, MarketState, Portfolio, Side
+from .market_data import load_market_snapshots
+from .models import AgentAction, Portfolio, Side
 from .risk import RiskConfig, RiskEngine
 
 
@@ -13,15 +13,6 @@ from .risk import RiskConfig, RiskEngine
 class AgentContext:
     agent: BaseAgent
     portfolio: Portfolio
-
-
-def _next_market_state(step: int, prev_price: float, rng: random.Random) -> MarketState:
-    drift = rng.uniform(-0.01, 0.01)
-    shock = rng.gauss(0, 0.015)
-    momentum = 0.6 * drift + 0.4 * shock
-    price = max(0.1, prev_price * (1 + momentum))
-    volatility = abs(shock)
-    return MarketState(step=step, price=price, momentum=momentum, volatility=volatility)
 
 
 def _apply_fill(action: AgentAction, portfolio: Portfolio, price: float, qty: float) -> None:
@@ -52,9 +43,12 @@ def _max_drawdown(equity_curve: list[float]) -> float:
     return max_dd
 
 
-def run_simulation(steps: int = 100, seed: int = 1) -> dict:
-    rng = random.Random(seed)
-    start_price = 1.0
+def run_simulation(steps: int = 100, seed: int = 1, snapshot_path: str | None = None) -> dict:
+    snapshots = load_market_snapshots(steps=steps, snapshot_path=snapshot_path)
+    if not snapshots:
+        raise ValueError("No snapshots available for simulation")
+
+    start_price = snapshots[0].price
     risk = RiskEngine(RiskConfig())
     launch_policy = LaunchPolicyEngine(LaunchPolicyConfig())
 
@@ -70,8 +64,8 @@ def run_simulation(steps: int = 100, seed: int = 1) -> dict:
     last_launch_step: dict[str, int | None] = {ctx.agent.agent_id: None for ctx in agents}
     price = start_price
 
-    for step in range(1, steps + 1):
-        state = _next_market_state(step, price, rng)
+    for state in snapshots:
+        step = state.step
         price = state.price
 
         for ctx in agents:
@@ -134,8 +128,9 @@ def run_simulation(steps: int = 100, seed: int = 1) -> dict:
 
     scoreboard.sort(key=lambda row: row["pnl"], reverse=True)
     return {
-        "steps": steps,
+        "steps": len(snapshots),
         "seed": seed,
+        "snapshot_source": snapshot_path or "package:data/historical_snapshots.csv",
         "final_price": round(price, 6),
         "scoreboard": scoreboard,
         "logs": logs,

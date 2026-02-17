@@ -4,7 +4,7 @@ A starter implementation of the paper-trading arena described in `PLATFORM_BLUEP
 
 ## What is implemented
 
-- Synthetic market with simple trend + volatility dynamics.
+- Replayed market feed from historical snapshot CSV data.
 - Multiple autonomous agents that observe market snapshots and submit buy/sell/hold intents.
 - Deterministic risk engine enforcing:
   - max position size,
@@ -30,6 +30,19 @@ pip install -e .[dev]
 python -m openclaw_arena.main --steps 50 --seed 7
 ```
 
+Run using a custom snapshot file:
+
+```bash
+python -m openclaw_arena.main --steps 120 --snapshot-path ./path/to/snapshots.csv
+```
+
+Expected CSV columns:
+
+- `step`
+- `price`
+- `momentum`
+- `volatility`
+
 ## Run tests
 
 ```bash
@@ -38,6 +51,6 @@ pytest
 
 ## Next build targets
 
-- Replace synthetic market with replayed historical snapshots.
 - Add cross-agent token inventory and venue-level pricing for launched tokens.
+- Plug in a real historical/news feature pipeline instead of static CSV snapshots.
 - Stream logs to a persistent store for tournament analytics.
