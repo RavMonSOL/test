@@ -31,13 +31,14 @@ def main() -> None:
     print(
         "OpenClaw Arena v0 "
         f"| steps={result['steps']} seed={result['seed']} final_price={result['final_price']} "
-        f"source={result['snapshot_source']}"
+        f"source={result['snapshot_source']} markets={len(result['token_markets'])}"
     )
     print("\nScoreboard")
     for row in result["scoreboard"]:
         print(
             f"- {row['agent']}: pnl={row['pnl']:.4f} final_equity={row['final_equity']:.4f} "
-            f"max_drawdown={row['max_drawdown']:.4f} launches={row['launches_approved']}"
+            f"max_drawdown={row['max_drawdown']:.4f} launches={row['launches_approved']} "
+            f"tokens={row['token_inventory']}"
         )
 
 

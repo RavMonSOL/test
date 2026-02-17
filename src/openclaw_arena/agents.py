@@ -3,7 +3,7 @@ from __future__ import annotations
 import random
 from dataclasses import dataclass
 
-from .models import AgentAction, LaunchProposal, MarketState, Side
+from .models import AgentAction, LaunchProposal, MarketState, Side, TokenOrder
 
 
 class BaseAgent:
@@ -13,6 +13,9 @@ class BaseAgent:
         raise NotImplementedError
 
     def propose_launch(self, state: MarketState) -> LaunchProposal | None:
+        return None
+
+    def propose_token_order(self, state: MarketState, ticker: str, ref_price: float, inventory: float) -> TokenOrder | None:
         return None
 
 
@@ -42,6 +45,13 @@ class MomentumAgent(BaseAgent):
             )
         return None
 
+    def propose_token_order(self, state: MarketState, ticker: str, ref_price: float, inventory: float) -> TokenOrder | None:
+        if state.momentum > 0.003:
+            return TokenOrder(agent_id=self.agent_id, ticker=ticker, side=Side.BUY, quantity=50.0)
+        if state.momentum < -0.003 and inventory > 0:
+            return TokenOrder(agent_id=self.agent_id, ticker=ticker, side=Side.SELL, quantity=min(40.0, inventory))
+        return None
+
 
 @dataclass(slots=True)
 class MeanReversionAgent(BaseAgent):
@@ -55,6 +65,14 @@ class MeanReversionAgent(BaseAgent):
         if deviation < -0.03:
             return AgentAction(self.agent_id, Side.BUY, abs(deviation) * 50, 0.65, "Price below anchor; mean reversion long-bias")
         return AgentAction(self.agent_id, Side.HOLD, 0.0, 0.35, "Price near anchor")
+
+    def propose_token_order(self, state: MarketState, ticker: str, ref_price: float, inventory: float) -> TokenOrder | None:
+        deviation = (state.price - self.anchor_price) / self.anchor_price
+        if deviation < -0.01:
+            return TokenOrder(agent_id=self.agent_id, ticker=ticker, side=Side.BUY, quantity=30.0)
+        if deviation > 0.01 and inventory > 0:
+            return TokenOrder(agent_id=self.agent_id, ticker=ticker, side=Side.SELL, quantity=min(30.0, inventory))
+        return None
 
 
 @dataclass(slots=True)
@@ -86,4 +104,12 @@ class NoiseSentimentAgent(BaseAgent):
                 initial_supply=300_000,
                 confidence=min(0.9, 0.6 + buzz / 3),
             )
+        return None
+
+    def propose_token_order(self, state: MarketState, ticker: str, ref_price: float, inventory: float) -> TokenOrder | None:
+        toss = self._rng.uniform(-1, 1)
+        if toss > 0.4:
+            return TokenOrder(agent_id=self.agent_id, ticker=ticker, side=Side.BUY, quantity=20.0)
+        if toss < -0.4 and inventory > 0:
+            return TokenOrder(agent_id=self.agent_id, ticker=ticker, side=Side.SELL, quantity=min(20.0, inventory))
         return None

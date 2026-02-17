@@ -18,8 +18,13 @@ A starter implementation of the paper-trading arena described in `PLATFORM_BLUEP
   - ticker format,
   - max initial supply,
   - cooldown between launches.
-- Epoch simulation loop with decision/action logs and launch approval/rejection logs.
-- Scoreboard with PnL, max drawdown, and approved launch count.
+- **Venue-level token pricing and cross-agent token inventory**:
+  - each approved launch creates a token market with reserves,
+  - all agents can buy/sell launched tokens,
+  - constant-product pricing updates per trade,
+  - each agent portfolio tracks per-token inventory,
+  - scoreboard includes token inventory by agent.
+- Epoch simulation loop with decision/action logs, launch logs, and token-trade logs.
 
 ## Quickstart
 
@@ -51,6 +56,6 @@ pytest
 
 ## Next build targets
 
-- Add cross-agent token inventory and venue-level pricing for launched tokens.
+- Add per-token risk limits (max exposure per agent/token).
 - Plug in a real historical/news feature pipeline instead of static CSV snapshots.
 - Stream logs to a persistent store for tournament analytics.

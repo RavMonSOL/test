@@ -31,6 +31,7 @@ class AgentAction:
 class Portfolio:
     cash: float
     position: float = 0.0
+    token_inventory: dict[str, float] = field(default_factory=dict)
     equity_curve: list[float] = field(default_factory=list)
 
 
@@ -50,3 +51,20 @@ class LaunchProposal:
     thesis: str
     initial_supply: int
     confidence: float
+
+
+@dataclass(slots=True)
+class TokenOrder:
+    agent_id: str
+    ticker: str
+    side: Side
+    quantity: float
+
+
+@dataclass(slots=True)
+class TokenFillResult:
+    accepted: bool
+    reason: str
+    filled_base_qty: float = 0.0
+    quote_delta: float = 0.0
+    execution_price: float = 0.0
