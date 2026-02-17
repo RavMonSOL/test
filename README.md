@@ -11,8 +11,15 @@ A starter implementation of the paper-trading arena described in `PLATFORM_BLUEP
   - max notional per trade,
   - no shorting,
   - minimum cash reserve.
-- Epoch simulation loop with decision/action logs.
-- Scoreboard with PnL and max drawdown.
+- Token launch proposal flow where agents can propose new meta tokens.
+- Launch policy guardrails enforcing:
+  - launch quota per agent,
+  - minimum confidence,
+  - ticker format,
+  - max initial supply,
+  - cooldown between launches.
+- Epoch simulation loop with decision/action logs and launch approval/rejection logs.
+- Scoreboard with PnL, max drawdown, and approved launch count.
 
 ## Quickstart
 
@@ -32,5 +39,5 @@ pytest
 ## Next build targets
 
 - Replace synthetic market with replayed historical snapshots.
-- Add token launch proposal flow and policy checks.
+- Add cross-agent token inventory and venue-level pricing for launched tokens.
 - Stream logs to a persistent store for tournament analytics.

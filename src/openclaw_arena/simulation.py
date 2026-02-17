@@ -4,6 +4,7 @@ import random
 from dataclasses import dataclass
 
 from .agents import BaseAgent, MeanReversionAgent, MomentumAgent, NoiseSentimentAgent
+from .launch import LaunchPolicyConfig, LaunchPolicyEngine
 from .models import AgentAction, MarketState, Portfolio, Side
 from .risk import RiskConfig, RiskEngine
 
@@ -55,6 +56,7 @@ def run_simulation(steps: int = 100, seed: int = 1) -> dict:
     rng = random.Random(seed)
     start_price = 1.0
     risk = RiskEngine(RiskConfig())
+    launch_policy = LaunchPolicyEngine(LaunchPolicyConfig())
 
     agents: list[AgentContext] = [
         AgentContext(MomentumAgent("momentum-1", aggressiveness=1.2), Portfolio(cash=1000.0)),
@@ -63,6 +65,9 @@ def run_simulation(steps: int = 100, seed: int = 1) -> dict:
     ]
 
     logs: list[dict] = []
+    launch_logs: list[dict] = []
+    launch_count: dict[str, int] = {ctx.agent.agent_id: 0 for ctx in agents}
+    last_launch_step: dict[str, int | None] = {ctx.agent.agent_id: None for ctx in agents}
     price = start_price
 
     for step in range(1, steps + 1):
@@ -70,6 +75,27 @@ def run_simulation(steps: int = 100, seed: int = 1) -> dict:
         price = state.price
 
         for ctx in agents:
+            proposal = ctx.agent.propose_launch(state)
+            if proposal is not None:
+                approved, status = launch_policy.validate(
+                    proposal,
+                    launches_so_far=launch_count[ctx.agent.agent_id],
+                    last_launch_step=last_launch_step[ctx.agent.agent_id],
+                )
+                if approved:
+                    launch_count[ctx.agent.agent_id] += 1
+                    last_launch_step[ctx.agent.agent_id] = step
+                launch_logs.append(
+                    {
+                        "step": step,
+                        "agent": proposal.agent_id,
+                        "ticker": proposal.ticker,
+                        "confidence": round(proposal.confidence, 4),
+                        "initial_supply": proposal.initial_supply,
+                        "status": status,
+                    }
+                )
+
             action = ctx.agent.act(state)
             fill = risk.validate(action, ctx.portfolio, state.price)
             if fill.accepted:
@@ -102,6 +128,7 @@ def run_simulation(steps: int = 100, seed: int = 1) -> dict:
                 "final_equity": round(final_equity, 4),
                 "pnl": round(pnl, 4),
                 "max_drawdown": round(_max_drawdown(ctx.portfolio.equity_curve), 4),
+                "launches_approved": launch_count[ctx.agent.agent_id],
             }
         )
 
@@ -112,4 +139,5 @@ def run_simulation(steps: int = 100, seed: int = 1) -> dict:
         "final_price": round(price, 6),
         "scoreboard": scoreboard,
         "logs": logs,
+        "launch_logs": launch_logs,
     }

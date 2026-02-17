@@ -27,7 +27,7 @@ def main() -> None:
     for row in result["scoreboard"]:
         print(
             f"- {row['agent']}: pnl={row['pnl']:.4f} final_equity={row['final_equity']:.4f} "
-            f"max_drawdown={row['max_drawdown']:.4f}"
+            f"max_drawdown={row['max_drawdown']:.4f} launches={row['launches_approved']}"
         )
 
 

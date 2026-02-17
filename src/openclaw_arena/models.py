@@ -40,3 +40,13 @@ class FillResult:
     reason: str
     filled_qty: float = 0.0
     notional: float = 0.0
+
+
+@dataclass(slots=True)
+class LaunchProposal:
+    agent_id: str
+    step: int
+    ticker: str
+    thesis: str
+    initial_supply: int
+    confidence: float
